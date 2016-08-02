@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import sys , os 
 sys.path.append ('../MotorControl')
 import isr
