@@ -38,6 +38,7 @@ class ColorFilter:
         self.setKernel ()
         self.setMatchThreshold ()
         self.setImageSize ()
+        self.setMinContourLength()
         self.matchTemplates = list()
         self.showMask = False
 
