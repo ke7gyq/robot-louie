@@ -87,13 +87,13 @@ def getTemplate( inString) :
 #
 # Base directory where we keep templates.
 #
-templateDir = '../Templates'
+templateDir = '../Templates/'
 
 def initializeRunnable ( cf , handler ):
     state = State ( cf,handler)
-    cf.addMatchTemplate ( getTemplate ( 'templateDir/smallLeftTurn.png'), Runnable ('left', state) )
-    cf.addMatchTemplate ( getTemplate ( 'templateDir/smallRightTurn.png'), Runnable ('right', state) )
-    cf.addMatchTemplate ( getTemplate ( 'templateDir/smallHairpinLeft.png'), Runnable ('uTurn', state) )
+    cf.addMatchTemplate ( getTemplate ( templateDir+"smallLeftTurn.png'), Runnable ('left', state) )
+    cf.addMatchTemplate ( getTemplate ( templateDir+"smallRightTurn.png'), Runnable ('right', state) )
+    cf.addMatchTemplate ( getTemplate ( templateDir+"smallHairpinLeft.png'), Runnable ('uTurn', state) )
     handler.addInstance('getposition', GetPosition( state))
 
     
