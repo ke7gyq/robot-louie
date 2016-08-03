@@ -4,11 +4,18 @@ import isr
 from Adafruit_PWM_Servo_Driver import PWM
 import wiringpi as wpi
 from Tokens import MyHandler
+import math, numpy as np
 
 
 
 
 class Distance:
+    # Counts per wheel revolution.
+    cpr         = 333.33
+    wDiamater   = 2.5                            # Wheel diamater in inches.
+    cpi         = cpr/math.pi/wDiamater          # Counts per inch.
+
+
     def __init__(self, motor ):
         (phaseA, phaseB) = (4,25) if motor else (23,24)
         self.hwIsr = isr.isr(phaseA, phaseB, motor)
@@ -55,9 +62,7 @@ servos={ 'leftTrack' : servo(0,0,8000), 'rightTrack': servo (1,0,8000),
 
 
 # Append servo commands.
-
-
-# Key is either pan or tilt.
+# Key is pan, tilt, leftTrack, or rightTrack.
 class hwObject:
     def __init__ ( self, key , initValue = 50):
         self.key = key 
@@ -76,7 +81,8 @@ class hwObject:
     def getValue( self):
         return self.value
     def setValue( self, value):
-        self.value = value
+        print "SetValue Key: %s, Value %d" %(self.key,  value)
+        self.set(value)
  
 
 
@@ -101,9 +107,6 @@ class getHwPercent:
 
     def getValue(self):
         return self.axis.getValue()
-
-
-
 
 
 
@@ -148,12 +151,18 @@ class getGear:
 
 class getDistance :
     def __init__ (self):
-        self.left = Distance(0)
-        self.right = Distance(1)
-    def run ( self,inString, tokens, cf, myFrame):
+        self.right = Distance(0)
+        self.left = Distance(1)
+      
+        
+    def getValue (self ):
         dLeft = self.left.getDistance()
         dRight= self.right.getDistance()
-        return str ((dLeft, dRight ))
+        return np.array((dLeft, dRight))
+
+
+    def run ( self,inString, tokens, cf, myFrame):
+        return str (self.getValue())
 
 # Set both motors to some value.
 class motors:
@@ -168,20 +177,93 @@ class motors:
             pass
         return str((self.left.value, self.right.value))
 
+    def setValue( speed) :
+        self.left.set (speed)
+        self.right.set (speed)
 
 
 
-pan = hwObject('pan')
-tilt =hwObject('tilt')
-leftTrack = hwObject('leftTrack', 0)
-rightTrack=hwObject('rightTrack', 0)
-hBridge = HBridge ()
+# changeHeading
+# We're stopped. Engage forward and reverse motors to change heading.
+
+class changeHeading :
+
+    
+    ticksPerInch = 42.44
+    scaleFactor = 20.0
+
+    def __init__(self, hBridge, left, right, distance ):
+        self.hBridge , self.left, self.right, self.distance   = hBridge, left, right, distance
+
+    def setValue ( self, newValue ) :
+        newValue = newValue if newValue < 180 else newValue - 360 
+        scaleValue = float(newValue)/360.0*changeHeading.scaleFactor
+        self.left.setValue(0)         # Turn off motors.
+        self.right.setValue(0)        #
+        curDistance = self.distance.getValue()
+        
+       
+        bridgeCommand = 'left'  if newValue > 0 else 'right'
+        targetDistance = curDistance + np.array(( -changeHeading.ticksPerInch, changeHeading.ticksPerInch)) * scaleValue
+
+        # print ("Scale Value %f" % scaleValue)
+        # print ("Cur Distance %s"% curDistance)
+        # print ("Target  Distance %s"% targetDistance)
+
+            
+        self.hBridge.setValue(bridgeCommand)
+        # Poll until we've met the conditions.
+        condition = 0
+        self.left.setValue (90)
+        self.right.setValue(90)
+
+   
+        while condition != 3 :
+            curDistance = self.distance.getValue()
+            # print "Cur Distance %s Target Distance %s "% (curDistance, targetDistance)
+            if bridgeCommand == 'left':
+                if curDistance [0] <= targetDistance[0]:
+                    #print "Condition1"
+                    self.left.setValue(0)
+                    condition |= 1
+                if curDistance[1] >= targetDistance[1]:
+                    #print "Condition2"
+                    self.right.setValue(0)
+                    condition|= 2
+            else:
+                if curDistance [0] >= targetDistance[0]:
+                    #print "Condition3"
+                    self.left.setValue(0)
+                    condition |= 1
+                if curDistance[1] <= targetDistance[1]:
+                    #print "Condition 4"
+                    self.right.setValue(0)
+                    condition|= 2
+
+        self.right.setValue(0)
+        self.left.setValue(0)
+        self.hBridge.setValue( 'off')
+        
+    def run ( self,inString, tokens, cf, myFrame):
+        self.setValue ( int(tokens[1]))
+        return "Finished"
+
+        
 
 
 
 
 
 def appendHwCommands( myHandler ):
+
+
+    pan = hwObject('pan')
+    tilt =hwObject('tilt')
+    leftTrack = hwObject('leftTrack', 0)
+    rightTrack= hwObject('rightTrack', 0)
+    hBridge = HBridge ()
+    distance = getDistance()
+
     myHandler.addInstance ( 'getpan', getHwPercent(pan))
     myHandler.addInstance ( 'setpan', setHwPercent(pan))
     myHandler.addInstance ( 'gettilt', getHwPercent(tilt))
@@ -195,9 +277,13 @@ def appendHwCommands( myHandler ):
     # Set the hbridge to forward, backward, spin right, spin left.
     myHandler.addInstance ( 'setgear', setGear(hBridge))
     myHandler.addInstance ( 'getgear', getGear(hBridge))
-    myHandler.addInstance ('getdistance', getDistance())
+    myHandler.addInstance ('getdistance', distance )
     myHandler.addInstance ('motors', motors(leftTrack,rightTrack))
     
+    # Change heading by some number of degrees ( approximated)
+    # We're in a stopped state.
+    myHandler.addInstance ('changeheading', changeHeading(hBridge,leftTrack,rightTrack,distance))
+
 
 
 

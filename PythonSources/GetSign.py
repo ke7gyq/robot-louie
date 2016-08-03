@@ -65,9 +65,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Sign Testbed")
     parser.add_argument ('--size', help='normalize to this size',   default='640 480' )
     parser.add_argument ('--showHSV', help='showHSV frame', default='n')
-    parser.add_argument ('--showMask', help='Show mask option', default='y')
+    parser.add_argument ('--showMask', help='Show mask option', default='n')
     parser.add_argument ('--pramFile', help='xmlPramaterFile', default='vidParms.xml')
-    parser.add_argument ('--runtime', help='Running Time(sec)', type=int, default='1200')
+    parser.add_argument ('--runtime', help='Running Time(sec)', type=int, default='3600')
     parser.add_argument ('--port', help = "Open server port ", type=int, default='1857')
     args = parser.parse_args()
  

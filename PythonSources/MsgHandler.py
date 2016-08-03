@@ -14,8 +14,6 @@ import netifaces
 
 #Start thread by invoking superclass handler 'start'
 class MsgHandler (threading.Thread):
-    sInterface  = 'eth0'
-
     def __init__ (self):
         threading.Thread.__init__(self)
         self.portNumber = 1857
@@ -35,12 +33,19 @@ class MsgHandler (threading.Thread):
         self.stopFlag = True
 
 
-    def setInterface ( self, myIf = sInterface ) :
-        iface = netifaces.ifaddresses( myIf).get(netifaces.AF_INET)
-        if iface == None:
-            raise ValueError ("No Interface %s" % interface)
-        # Assume first hardware card on interface...
-        self.myAddress = iface[0]['addr']
+    def setInterface ( self ) :
+        for myIf in ( ['eth0', 'wlan0' ]):
+            try :
+                iface = netifaces.ifaddresses( myIf).get(netifaces.AF_INET)
+                # Assume first hardware card on interface...
+                self.myAddress = iface[0]['addr']
+                return
+            except:
+                pass
+
+        raise ValueError ("No Interface found")
+       
+     
 
     def run (self):
         if self.verbose:

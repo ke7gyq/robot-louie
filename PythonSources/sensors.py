@@ -3,6 +3,8 @@
 import smbus
 import threading
 import time
+import numpy as np
+import math
 
 class Compass:
     def __init__ (self, baseAddr = 0x1e, busNumber=1):
@@ -18,7 +20,7 @@ class Compass:
         values = self.bus.read_i2c_block_data(self.addr, 0x28 ,6 )
         v = [ values[1]<<8 | values[0] , values[3] <<8 | values[2],
                  values[5]<<8 | values[4] ]
-        return v
+        return np.array(v, dtype=np.int16)
         
 
 class Accel:
@@ -35,13 +37,13 @@ class Accel:
         values = self.bus.read_i2c_block_data(self.addr, 0x28 ,6 ) #outx_l_xl
         v = [ values[1]<<8 | values[0] , values[3] <<8 | values[2],
                  values[5]<<8 | values[4] ]
-        return v
+        return np.array(v, dtype=np.int16)
 
     def readGyro (self):
         values = self.bus.read_i2c_block_data(self.addr, 0x22 ,6 ) #out_l_g
         v = [ values[1]<<8 | values[0] , values[3] <<8 | values[2],
                  values[5]<<8 | values[4] ]
-        return v
+        return np.array(v,dtype=np.int16)
 
 
 class Sensors ( threading.Thread):
@@ -72,7 +74,8 @@ class Sensors ( threading.Thread):
             time.sleep( self.dwellTime)
             
     def getResultString ( self):
-        return str(( self.magValues, self.accelValues, self.gyroValues))
+        v = np.array( [ self.magValues, self.accelValues, self.gyroValues])
+        return str( v )
         
     def getMag(self):
         return self.magValues
@@ -86,10 +89,28 @@ class Sensors ( threading.Thread):
 class GetSensorValues:
     def __init__ (self, sensors ):
         self.sensors = sensors
-        
-    # This is not the thread run, but the handler for a command.
     def run ( self,inString, tokens, cf, myFrame):
         return self.sensors.getResultString()
+
+# Note that we do not adjust for tilt angle. Or anything else here.
+# FIXME.
+class GetHeading:
+    def __init__ (self, sensors ):
+        self.sensors = sensors
+    def run ( self,inString, tokens, cf, myFrame):
+        return str(self.getValue())
+
+    # Return a floating point number between 0, 360 degrees.
+    def getValue(self):
+        x,y,z = self.sensors.magValues
+        angle = math.degrees ( math.atan2(-y,x))
+        angle = 360.0 + angle if angle< 0 else angle
+        return angle
+
+        
+
+    
+
 
 
 sensors = Sensors()
@@ -101,6 +122,7 @@ def getSensors():
 
 def appendGyroCommands (myHandler):
     myHandler.addInstance ('getsensors', GetSensorValues(sensors))
+    myHandler.addInstance ('getheading', GetHeading(sensors))
 
 
 

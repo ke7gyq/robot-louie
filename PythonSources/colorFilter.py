@@ -4,7 +4,6 @@
 
 import cv2, numpy as np
 import sys
-
 import xml.etree.ElementTree as et
 
 
@@ -102,6 +101,8 @@ class ColorFilter:
         _,contours,heirarchy = cv2.findContours(mask, 
                                                 cv2.RETR_TREE, 
                                                 cv2.CHAIN_APPROX_TC89_L1 )
+
+
         return (contours, heirarchy)
 
 
