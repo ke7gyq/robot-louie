@@ -98,6 +98,13 @@ if __name__ == '__main__':
         camera.resolution = (cf.imageSize )
         #camera.start_preview()
         time.sleep(2)
+        camera.shutter_speed = camera.exposure_speed
+        camera.exposure_mode = 'off'
+        g = camera.awb_gains
+        camera.awb_mode = 'off'
+        camera.awb_gains = g
+
+
         with MyFrame (camera, camera.resolution ) as output:
             myHandler.myFrame  = output
             output.showHSV = args.showHSV =='y'

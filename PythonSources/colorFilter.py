@@ -126,25 +126,42 @@ class ColorFilter:
 
         for cIdx, hh in enumerate (h[0]) :
             
-            m = cv2.moments(c[cIdx])
-            weight = m['m00']
-            if weight < 20:
-                continue
-            x,y = m['m10']/weight, m['m01']/weight
-            # print "X %f , Y %f , Weight %d" %(x,y,weight) 
+            # m = cv2.moments(c[cIdx])
+            # weight = m['m00']
+            # if weight < 50:
+            #     continue
+            # x,y = m['m10']/weight, m['m01']/weight
+            # # print "X %f , Y %f , Weight %d" %(x,y,weight) 
 
+            # Allow 15 degree angular differences.
             mar = cv2.minAreaRect(c[cIdx])
             angle = mar[2]
-            if not -50 < angle < -40:
+            if not -60 < angle < -30:
+                #print "Angle %f" % angle
                 continue
 
+            # We want a box, with a big enough size
+            # to do something with. Min pixel size
+            # of box = 20x20. 
+
             marX,marY = mar[1]
+            marWeight = marX * marY 
+            if marWeight < 400:   # Pixel size 20x20
+               # print "Too Small area"
+                continue
+
             marR = marY/marX
-            if not .8 < marR < 1.2 :
+            if not .9 < marR < 1.1 :
+               # print "MarX %f MarY %f, MarR %f" % (marX,marY,marR)
                 continue
 
             if hh[2] < 0 : 
-                print "Cannot figure out arrow info at x %f, y %f, Weight %f" %(x,y,weight)
+                m = cv2.moments(c[cIdx])
+                weight = m['m00']
+                x,y = m['m10']/weight, m['m01']/weight
+                absWeight = np.abs(weight - marWeight) / marWeight
+                if .9 < absWeight < 1.1 :
+                    print "Likely Target at  x %f, y %f, Weight %f" %(x,y,weight)
                 continue
 
 
@@ -162,6 +179,14 @@ class ColorFilter:
 
             # This is a "have sign" case.
             if len(cc) < self.minContourLength:
+                print "Not enough points in contour %d"% len(cc)
+                m = cv2.moments(c[cIdx])
+                weight = m['m00']
+                x,y = m['m10']/weight, m['m01']/weight
+                absWeight = np.abs(weight - marWeight) / marWeight
+                #if .9 < absWeight < 1.1 :
+                print "Likely Target at  x %f, y %f, Weight %f" %(x,y,weight)
+
                 continue
 
 
@@ -173,8 +198,9 @@ class ColorFilter:
             idxMin = np.argmin ( scores ) 
             minMatch = scores[idxMin] 
             # print "MinMatch is %f" % minMatch
+            # Note, We're sending in the bounding box for the symbol.
             if minMatch < self.symbolMatchThreshold:
-                self.runnable[idxMin].run (cc)
+                self.runnable[idxMin].run (c[cIdx])
            
 
     # Debugging function.

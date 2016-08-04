@@ -57,11 +57,11 @@ class Runnable :
 
     def run ( self, contour ) :
         self.state.inContour ( contour)
-        # m = cv2.moments(contour)
-        # m00,m10,m01 = (m['m00'], m['m10'], m['m01'])
-        # x,y = (m10/m00, m01/m00)
-        print ("Runnable String is %s" % self.idString )
-        # print ("Contour length is  %s, XY %s" % (len(contour), (x,y)))
+        m = cv2.moments(contour)
+        m00,m10,m01 = (m['m00'], m['m10'], m['m01'])
+        x,y = (m10/m00, m01/m00)
+        print ("Runnable String is %s X: %f Y : %f , W %f " % (self.idString,x,y,m00) )
+       
 
 
 
