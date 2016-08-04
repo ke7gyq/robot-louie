@@ -185,8 +185,19 @@ class TakePictures:
     def run( self,inString, tokens):
         try:
             self.cf.pString = tokens[1]
-        finally:
-            return "Ok"
+            return 'Ok'
+        except:
+            self.cv.pString = None
+            return 'No Filename'
+
+class Calibrate:
+    def __init__ ( self, cf ):
+        self.cf = cf
+    def run( self,inString, tokens):
+        self.cf.doCalibrate = True
+        return "Ok"
+    
+
 
 
 
@@ -207,7 +218,7 @@ def getMyHandler( cf ) :
     myHandler.addInstance ( 'verboseon',verboseon(cf))
     myHandler.addInstance ( 'verboseoff',verboseoff(cf))
     myHandler.addInstance ( 'takepictures', TakePictures(cf))
-
+    myHandler.addInstance ( 'calibrate', Calibrate(cf))
     return myHandler
 
 

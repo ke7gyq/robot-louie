@@ -5,6 +5,7 @@
 import cv2, numpy as np
 import sys
 import xml.etree.ElementTree as et
+from Calibrate import doCalibrate
 
 
 # Convert an input string to a string of integers.
@@ -41,6 +42,7 @@ class ColorFilter:
         self.matchTemplates = list()
         self.showMask = False
 
+        self.doCalibrate = False
         self.moments = None
         self.runnable = list()
         self.pString = None                   # Base name for saving pictures.
@@ -49,7 +51,7 @@ class ColorFilter:
         
     def setColorBoundries (self, low=defaultLow,
                                 high=defaultHigh):
-        self.lowColor, self.highColor  = (low, high)
+        self.lowColor, self.highColor  = low, high
 
     def setBorderShape ( self, borderShape=defaultPoints):
         self.borderShape = borderShape
@@ -89,6 +91,15 @@ class ColorFilter:
     # Return sets of contours associated with this image.
 
     def colorMatch ( self, bgrImage ):
+
+        if self.doCalibrate:
+            doCalibrate( self, bgrImage)
+            self.doCalibrate = False
+
+
+
+
+
         hsv = cv2.cvtColor ( bgrImage, self.colorCvtType )
         mask = cv2.inRange(hsv, self.lowColor, self.highColor)
         if self.doMask:
@@ -214,6 +225,7 @@ class ColorFilter:
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+    # This needs to go away.
     def xmlDecodePrams ( self,inFileName ):
         try:
             tree = et.parse(inFileName)
@@ -230,7 +242,7 @@ class ColorFilter:
 
 
     
-
+    # This needs to go away.
     def decodeTag( self, tag, attrib ) :
         if tag == 'colorRange':
             lowColor = cvtToIntegers( attrib['lowColor'])
