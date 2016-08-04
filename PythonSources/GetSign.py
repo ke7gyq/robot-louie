@@ -85,13 +85,14 @@ if __name__ == '__main__':
     initializeRunnable ( cf, myHandler)
     appendHwCommands(myHandler)          # Motor contorol commands.
     appendGyroCommands(myHandler)        # Accleromater and compas.
+    myHandler.fromXML ( args.pramFile )  # Read in any XLM pramaters.
 
     msgHandler = MsgHandler()
     msgHandler.portNumber = args.port
 
     msgHandler.setHandler(myHandler)
     msgHandler.start()
-
+    
     
     with picamera.PiCamera()  as camera:
         camera.resolution = (cf.imageSize )

@@ -89,7 +89,7 @@ class Sensors ( threading.Thread):
 class GetSensorValues:
     def __init__ (self, sensors ):
         self.sensors = sensors
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         return self.sensors.getResultString()
 
 # Note that we do not adjust for tilt angle. Or anything else here.
@@ -97,7 +97,7 @@ class GetSensorValues:
 class GetHeading:
     def __init__ (self, sensors ):
         self.sensors = sensors
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         return str(self.getValue())
 
     # Return a floating point number between 0, 360 degrees.

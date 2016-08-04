@@ -6,12 +6,16 @@
   <colorFilter>
     <!--colorRange lowColor="27 200 170" highColor="31 255 255" /-->
     <!--colorRange lowColor="20 80 100" highColor="28 255 200" /-->
-    <colorRange lowColor="20 200 100" highColor="28 255 240" />
+    <colorRange lowColor="15 171 68" highColor="30 255 240" />
     <templateShape value="50 100 100 50 50 0 0 50" />
     <kernelSize value='5' />
     <thresholds borderMatch='0.5' symbolMatch='0.02' />
     <imagesSize value='640 480' />
     <minContourLength value='10' />
   </colorFilter>
+
+  <!--
+      <initparam value="setlow 10 20 33" />
+  -->
 </parms>
 

@@ -89,7 +89,7 @@ class hwObject:
 class setHwPercent:
     def __init__ ( self, axis ):
         self.axis = axis
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         try :
             self.axis.set ( int ( tokens[1]))
         except:
@@ -102,7 +102,7 @@ class setHwPercent:
 class getHwPercent:
     def __init__ ( self, axis ):
         self.axis = axis
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         return self.axis.get()
 
     def getValue(self):
@@ -135,7 +135,7 @@ class setGear :
     def __init__ ( self, hBridge ):
         self.hBridge = hBridge;
         
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         try :
             self.hBridge.setValue( tokens[1])
         except:
@@ -145,7 +145,7 @@ class setGear :
 class getGear:
     def __init__(self, hBridge):
         self.hBridge = hBridge
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         return  self.hBridge.get()
 
 
@@ -161,14 +161,14 @@ class getDistance :
         return np.array((dLeft, dRight))
 
 
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         return str (self.getValue())
 
 # Set both motors to some value.
 class motors:
     def __init__(self, left, right ):
         self.left, self.right  = left, right
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         try :
             speed = int(tokens[1])
             self.left.set ( speed)
@@ -244,7 +244,7 @@ class changeHeading :
         self.left.setValue(0)
         self.hBridge.setValue( 'off')
         
-    def run ( self,inString, tokens, cf, myFrame):
+    def run ( self,inString, tokens):
         self.setValue ( int(tokens[1]))
         return "Finished"
 

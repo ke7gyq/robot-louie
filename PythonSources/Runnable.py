@@ -43,7 +43,7 @@ class State:
 class GetPosition:
     def __init__ ( self, state):
         self.state = state
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         return str( ( self.state.x, self.state.y))
         
 
@@ -82,8 +82,6 @@ def getTemplate( inString) :
 
 
 
-
-
 #
 # Base directory where we keep templates.
 #
@@ -95,5 +93,6 @@ def initializeRunnable ( cf , handler ):
     cf.addMatchTemplate ( getTemplate ( templateDir+'smallRightTurn.png'), Runnable ('right', state) )
     cf.addMatchTemplate ( getTemplate ( templateDir+'smallHairpinLeft.png'), Runnable ('uTurn', state) )
     handler.addInstance('getposition', GetPosition( state))
+
 
     

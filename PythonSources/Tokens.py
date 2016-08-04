@@ -2,6 +2,7 @@
 # Run time execution of tokens.
 
 import numpy as np
+import xml.etree.ElementTree as et
 
 #Handler for messages coming in from the outside world.
 #
@@ -12,8 +13,9 @@ class MyHandler :
         self.myFrame = None
         self.keywords = dict()
     
-    def addKeyword ( self, key, classHandler ):
-        self.addInstance(key, classHandler())
+#    def addKeyword ( self, key, classHandler ):
+#        self.addInstance(key, classHandler())
+
     def addInstance ( self, key , instance ) :
         self.keywords[key] = instance 
 
@@ -24,8 +26,6 @@ class MyHandler :
         except KeyError:
             return None
 
-
-
     def run ( self, inString ):
         if self.verbose:
             print "Received %s" % inString
@@ -34,87 +34,102 @@ class MyHandler :
             token = tokens[0]
             try :
                 handler = self.keywords[token]
-                s = handler.run( inString, tokens, self.cf, self.myFrame )
+                s = handler.run( inString, tokens  )
                 return "%s\n" %s
             except KeyError:
                  return "No Handler for keyword %s\n" % token
         else:
             return "No Tokens\n"
 
+    
+    def fromXML ( self, inFileName ):
+        try :
+            tree = et.parse(inFileName)
+            root = tree.getroot()
+        except:
+            print "Tokens.py. Could not parse %s" %inFileName
+            print "Using Defaults"
+            return
+        print "Decoded  %s " % inFileName
+        if root.tag =='parms':
+            for iv in root.iter ('initparam'):
+                self.run ( iv.attrib['value'])
+
+
+
+
+
 
 class getlow :
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
-        return str(cf.lowColor)
+    def run( self,inString, tokens):
+        return str(self.cf.lowColor)
 
 class gethigh:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run(self,inString,tokens, cf, myFrame):
-        return str(cf.highColor)
+    def run(self,inString,tokens):
+        return str(self.cf.highColor)
         
 class setlow:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         if len(tokens) == 4:
             try:
-                cf.lowColor  = np.array([int(t) for t in tokens[1:]])
+                self.cf.lowColor  = np.array([int(t) for t in tokens[1:]])
             except:
                 pass
-        return str(cf.lowColor)
+        return str(self.cf.lowColor)
    
-
- 
-
 class sethigh:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         if len(tokens) == 4:
             try:
-                cf.highColor  = np.array([int(t) for t in tokens[1:]])
+                self.cf.highColor  = np.array([int(t) for t in tokens[1:]])
             except:
                 pass
-        return str(cf.highColor)
+        return str(self.cf.highColor)
     
 class getksize:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         return str(cf.kernelSize)
 
 class setksize:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         try:
-            cf.setKernel ( int(tokens[1]))
+            self.cf.setKernel ( int(tokens[1]))
         except:
             pass
-        return str(cf.kernelSize)
+        return str(self.cf.kernelSize)
 
 class getthreshold:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
-        return str (( cf.borderMatchThreshold, cf.symbolMatchThreshold))
+    def run( self,inString, tokens):
+        return str (( self.cf.borderMatchThreshold, self.cf.symbolMatchThreshold))
 class setthreshold:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         try:
             f1, f2  = float(tokens[1]) , float(tokens[2])
-            cf.setMatchThreshold( f1,f2)
+            self.cf.setMatchThreshold( f1,f2)
         except:
             pass
-        return str(( cf.borderMatchThreshold, cf.symbolMatchThreshold ))
+        return str(( self.cf.borderMatchThreshold, self.cf.symbolMatchThreshold ))
     
 class getimagesize:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         return str(self.cf.imageSize)
 
     def getValue(self):
@@ -123,46 +138,55 @@ class getimagesize:
 class setimagesize:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         try: 
             i1,i2 = float(tokens[1]), float(tokens[2])
-            cf.setImageSize(i1,i2)
+            self.cf.setImageSize(i1,i2)
         except:
             pass
-        return str(cf.imageSize)
+        return str(self.cf.imageSize)
     
 class getcontourlength:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
-        return str(cf.minContourLength)
+    def run( self,inString, tokens):
+        return str(self.cf.minContourLength)
 
 class setcontourlength:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
+    def run( self,inString, tokens):
         try: 
             i1 = float(tokens[1])
-            cf.setMinContourLength(i1)
+            self.cf.setMinContourLength(i1)
         except:
             pass
-        return str(cf.minContourLength)
+        return str(self.cf.minContourLength)
 
 class verboseon:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
-        cf.verbose=True
-        myFrame.verbose=True
+    def run( self,inString, tokens):
+        self.cf.verbose=True
+        # myFrame.verbose=True
         return "verbose On"
         
 class verboseoff:
     def __init__ ( self, cf ):
         self.cf = cf
-    def run( self,inString, tokens, cf, myFrame):
-        cf.verbose=False
-        myFrame.verbose=False
+    def run( self,inString, tokens):
+        self.cf.verbose=False
+        # myFrame.verbose=False
         return "verbose Off"
+
+class TakePictures:
+    def __init__ ( self, cf ):
+        self.cf = cf
+    def run( self,inString, tokens):
+        try:
+            self.cf.pString = tokens[1]
+        finally:
+            return "Ok"
 
 
 
@@ -182,6 +206,7 @@ def getMyHandler( cf ) :
     myHandler.addInstance ( 'setcontourlength',setcontourlength(cf))
     myHandler.addInstance ( 'verboseon',verboseon(cf))
     myHandler.addInstance ( 'verboseoff',verboseoff(cf))
+    myHandler.addInstance ( 'takepictures', TakePictures(cf))
 
     return myHandler
 

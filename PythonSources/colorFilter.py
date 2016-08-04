@@ -43,7 +43,7 @@ class ColorFilter:
 
         self.moments = None
         self.runnable = list()
-
+        self.pString = None                   # Base name for saving pictures.
 
         self.colorCvtType = cv2.COLOR_BGR2HSV
         
@@ -93,8 +93,19 @@ class ColorFilter:
         mask = cv2.inRange(hsv, self.lowColor, self.highColor)
         if self.doMask:
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, self.kernel)
-#        cv2.imshow ( 'xx', mask)
-#        cv2.waitKey(0)
+            #        cv2.imshow ( 'xx', mask)
+            #        cv2.waitKey(0)
+
+
+        pString = self.pString
+        if pString :
+            bgr = cv2.cvtColor ( hsv, cv2.COLOR_HSV2BGR)
+            cv2.imwrite (pString+'bgrImg.png', bgr)
+            cv2.imwrite (pString+'hsvImg.png', hsv)
+            cv2.imwrite (pString+'maskImg.png', mask)
+            self.pString = None
+            
+
 
         if self.showMask:
             self.maskSave = mask.copy()
@@ -102,7 +113,7 @@ class ColorFilter:
                                                 cv2.RETR_TREE, 
                                                 cv2.CHAIN_APPROX_TC89_L1 )
 
-
+ 
         return (contours, heirarchy)
 
 
@@ -111,11 +122,18 @@ class ColorFilter:
         self.contours, self.heirarchy = (c,h)
         if h is None: return 
         
-        for cIdx, hh in enumerate (h[0]) :
-            if hh[2] < 0 : continue
- 
-            mar = cv2.minAreaRect(c[cIdx])
+        print "\n"
 
+        for cIdx, hh in enumerate (h[0]) :
+            
+            m = cv2.moments(c[cIdx])
+            weight = m['m00']
+            if weight < 20:
+                continue
+            x,y = m['m10']/weight, m['m01']/weight
+            # print "X %f , Y %f , Weight %d" %(x,y,weight) 
+
+            mar = cv2.minAreaRect(c[cIdx])
             angle = mar[2]
             if not -50 < angle < -40:
                 continue
@@ -125,6 +143,12 @@ class ColorFilter:
             if not .8 < marR < 1.2 :
                 continue
 
+            if hh[2] < 0 : 
+                print "Cannot figure out arrow info at x %f, y %f, Weight %f" %(x,y,weight)
+                continue
+
+
+        
             #print mar
 
             # # Test top level to make sure that we're looking at a square shape.
