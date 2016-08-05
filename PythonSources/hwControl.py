@@ -226,21 +226,27 @@ class changeHeading :
             if bridgeCommand == 'left':
                 if curDistance [0] <= targetDistance[0]:
                     #print "Condition1"
+                    self.hBridge.setValue('rightforward')
                     self.left.setValue(0)
                     condition |= 1
                 if curDistance[1] >= targetDistance[1]:
                     #print "Condition2"
+                    self.hBridge.setValue('leftbackward')
                     self.right.setValue(0)
                     condition|= 2
             else:
                 if curDistance [0] >= targetDistance[0]:
                     #print "Condition3"
                     self.left.setValue(0)
+                    self.hBridge.setValue('rightbackward')
                     condition |= 1
                 if curDistance[1] <= targetDistance[1]:
                     #print "Condition 4"
                     self.right.setValue(0)
+                    self.hBridge.setValue('leftForward')
                     condition|= 2
+ 
+
 
         self.right.setValue(0)
         self.left.setValue(0)
@@ -254,7 +260,7 @@ class changeHeading :
 
 class _Forward ( threading.Thread):
 
-    ticksPerFoot = 12.0*333.33/math.pi/2.5
+    ticksPerFoot = 77
     def __init__(self, forward):
         threading.Thread.__init__(self)
         self.forward = forward
@@ -263,6 +269,7 @@ class _Forward ( threading.Thread):
         self.busy = False
         self.travelDistance = None
         self.sleepTime = 0.1
+        self.trackGain = .001
 
     def setDistance ( self, inDistance):
         self.travelDistance = inDistance
@@ -275,7 +282,7 @@ class _Forward ( threading.Thread):
     def run (self ):
         self.busy = True
         state = 0
-        speedLeft, speedRight = 80,80 
+        speedLeft, speedRight = 80.0,80.0 
         self.leftTrack.setValue(speedLeft)
         self.rightTrack.setValue(speedRight)
         self.hBridge.setValue('forward')
@@ -285,12 +292,22 @@ class _Forward ( threading.Thread):
             dLeft, dRight = dDist 
             if dLeft <= 0:
                 state |= 1
+                self.hBridge.setValue('rightforward')
                 self.leftTrack.setValue(0)
             if dRight<= 0:
                 state |=2
+                self.hBridge.setValue('leftforward')
                 self.rightTrack.setValue(0)
             if state == 3:
                 break
+            if state == 0:
+                deltaD = (dLeft-dRight) * self.trackGain
+                speedLeft += deltaD
+                speedRight -= deltaD
+                self.leftTrack.setValue(speedLeft)
+                self.rightTrack.setValue(speedRight)
+                #print "Speed Left %f, speedRight %f, dletaD %f dLeft %d dRight %d" %(speedLeft,speedRight,deltaD,dLeft,dRight)
+
             time.sleep( self.sleepTime )
 
         self.hBridge.setValue('off')
