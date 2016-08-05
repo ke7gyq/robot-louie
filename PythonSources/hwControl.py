@@ -81,7 +81,7 @@ class hwObject:
     def getValue( self):
         return self.value
     def setValue( self, value):
-        print "SetValue Key: %s, Value %d" %(self.key,  value)
+        #print "SetValue Key: %s, Value %d" %(self.key,  value)
         self.set(value)
  
 
@@ -291,7 +291,7 @@ class _Forward ( threading.Thread):
                 break
             time.sleep( self.sleepTime )
 
-        self.hBridge.setVal('off')
+        self.hBridge.setValue('off')
 
         print "Forward Run Thread"
         time.sleep(10)
