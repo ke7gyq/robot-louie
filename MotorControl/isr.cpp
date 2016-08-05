@@ -7,7 +7,6 @@ Play with the ISR functions.
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
-
 #include "isr.h"
 
 
@@ -46,7 +45,11 @@ void setDir (MDIR dir ) {
   static const int right [] = { 0,1,1,0};
   static const int stop [] = {0,0,0,0};
   static const int test [] = {1,1,1,1};
-  
+
+  static const int leftForward [] = {0,1,0,0};
+  static const int leftBackward[] = {1,0,0,0};
+  static const int rightForward [] = {0,0,0,1};
+  static const int rightBackward [] = {0,0,1,0};
 
   
   switch (dir){
@@ -54,6 +57,12 @@ void setDir (MDIR dir ) {
   case BACKWARD:setPins(reverse); break;
   case RIGHT: setPins(right); break;
   case LEFT: setPins(left); break;
+
+  case RIGHTFORWARD:  setPins(rightForward); break; 
+  case RIGHTBACKWARD:setPins(rightBackward); break; 
+  case LEFTFORWARD:  setPins(leftForward); break; 
+  case LEFTBACKWARD: setPins(leftBackward); break;
+
   case OFF:
   default: 
     setPins( stop); 
@@ -64,10 +73,22 @@ void setDir (MDIR dir ) {
 
 
 isr * rIsr[2] ;
-void int0 () {rIsr[0]->_phaseA();}
-void int1 () {rIsr[0]->_phaseB();}
-void int2 () {rIsr[1]->_phaseA();}
-void int3 () {rIsr[1]->_phaseB();}
+void int0 () {
+  // printf ("Int     0\n");
+  rIsr[0]->_phaseA();
+}
+void int1 () {
+  // printf ("Int     1\n");
+  rIsr[0]->_phaseB();
+}
+void int2 () {
+  // printf ("Int2 \n");
+  rIsr[1]->_phaseA();
+}
+void int3 () {
+  // printf ("Int3 \n");
+  rIsr[1]->_phaseB();
+}
 
 isr::isr(int phaseA,int phaseB, int isrNo ){
   this->phaseA = phaseA;
@@ -80,8 +101,12 @@ isr::isr(int phaseA,int phaseB, int isrNo ){
   rIsr[isrNo] = this;
   pinMode ( phaseA, INPUT);
   pinMode ( phaseB, INPUT);
-  wiringPiISR( phaseA, INT_EDGE_BOTH, isrNo ? &int2 : &int0);
-  wiringPiISR( phaseB, INT_EDGE_BOTH, isrNo ? &int3 : &int1);
+  // wiringPiISR( phaseA, INT_EDGE_BOTH, isrNo ? &int2 : &int0);
+  // wiringPiISR( phaseB, INT_EDGE_BOTH, isrNo ? &int3 : &int1);
+  wiringPiISR( phaseA, INT_EDGE_FALLING, isrNo ? &int2 : &int0);
+  // wiringPiISR( phaseB, INT_EDGE_FALLING, isrNo ? &int3 : &int1);
+  pullUpDnControl ( phaseA, PUD_UP);
+  pullUpDnControl ( phaseB, PUD_UP);
 
 
   callbackArg = 0;
@@ -92,16 +117,28 @@ int isr::getDistance() {
   return distance;
 }
 
+
+/*
+Interrupts now occur on falling edge of 
+phase A
+
+Make sure that the edge is teill low.
+*/
+
 void isr::_phaseA(void){
   int s1 = digitalRead(phaseA);
-  int s2 = digitalRead(phaseB);
-  distance += s1 == s2 ? -1 : 1 ;
+  if ( ! s1) {
+     int s2 = digitalRead(phaseB);
+     distance += s1 == s2 ? -1 : 1 ;
+  }
 }
 
 void isr::_phaseB(void){
-  int s1 = digitalRead(phaseA);
   int s2 = digitalRead(phaseB);
-  distance += s1 == s2 ? 1 : -1;
+  if ( ! s2 ){
+     int s1 = digitalRead(phaseA);
+     distance += s1 == s2 ? 1 : -1;
+  }
 }
 
 

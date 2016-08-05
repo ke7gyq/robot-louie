@@ -116,7 +116,9 @@ class HBridge:
         isr.setDir(isr.OFF)
         self.value = 'off'
         self.cases = { 'forward': isr.FORWARD, 'reverse' :isr.BACKWARD,
-                  'left': isr.LEFT, 'right':isr.RIGHT, 'off': isr.OFF}
+                       'left': isr.LEFT, 'right':isr.RIGHT, 'off': isr.OFF,
+                       'rightforward': isr.RIGHTFORWARD, 'rightbackward':isr.RIGHTBACKWARD,
+                       'leftforward' : isr.LEFTFORWARD, 'leftbackward': isr.LEFTBACKWARD}
 
 
     def setValue ( self, value ):

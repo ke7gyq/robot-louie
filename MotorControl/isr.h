@@ -13,7 +13,10 @@ Hook 2 ISR routines. Determine quadurature distances
 void setup( int priority = 10 );
 
 //For motor control
-enum MDIR { OFF, FORWARD, BACKWARD, RIGHT, LEFT, TEST };
+enum MDIR { OFF, FORWARD, BACKWARD, RIGHT, LEFT, TEST,
+	    RIGHTFORWARD,RIGHTBACKWARD,
+	    LEFTFORWARD,LEFTBACKWARD
+};
 void setDir ( MDIR dir  = OFF );
 // These are the output pins to the motor.
 void setMPins ( int p0=17, int p1=18, int p2=27, int p3=22);

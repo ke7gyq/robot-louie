@@ -5117,6 +5117,10 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "RIGHT",SWIG_From_int(static_cast< int >(RIGHT)));
   SWIG_Python_SetConstant(d, "LEFT",SWIG_From_int(static_cast< int >(LEFT)));
   SWIG_Python_SetConstant(d, "TEST",SWIG_From_int(static_cast< int >(TEST)));
+  SWIG_Python_SetConstant(d, "RIGHTFORWARD",SWIG_From_int(static_cast< int >(RIGHTFORWARD)));
+  SWIG_Python_SetConstant(d, "RIGHTBACKWARD",SWIG_From_int(static_cast< int >(RIGHTBACKWARD)));
+  SWIG_Python_SetConstant(d, "LEFTFORWARD",SWIG_From_int(static_cast< int >(LEFTFORWARD)));
+  SWIG_Python_SetConstant(d, "LEFTBACKWARD",SWIG_From_int(static_cast< int >(LEFTBACKWARD)));
 #if PY_VERSION_HEX >= 0x03000000
   return m;
 #else

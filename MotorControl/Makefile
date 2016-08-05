@@ -1,4 +1,7 @@
 # Makefile for isr.
+# Note that this needs to be run on the Pi,
+# Meta X compile doesn't work
+
 
 PYINC=/usr/include/python2.7
 
@@ -9,7 +12,7 @@ _isr.so:isr.o isr_wrap.o
 	g++ -shared isr.o isr_wrap.o -l wiringPi -o _isr.so
 
 isr.o:isr.cpp
-	g++ -O2 -fPIC -c  isr.cpp
+	g++  -O2 -fPIC -c  isr.cpp
 
 isr_wrap.o:isr_wrap.cxx
 	g++ -O2 -fPIC -c  -I$(PYINC) isr_wrap.cxx

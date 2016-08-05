@@ -20,11 +20,16 @@ gpio export 27 out
 gpio export 22 out
 
 
-gpio mode 4 in
+gpio mode 4 in 
 gpio mode 5 in
 gpio mode 6 in
 gpio mode 7 in
 
+
+gpio mode 4 up 
+gpio mode 5 up 
+gpio mode 6 up 
+gpio mode 7 up 
 
 
 cmd=${1-"stop"}
