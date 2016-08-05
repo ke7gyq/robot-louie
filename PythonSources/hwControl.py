@@ -5,7 +5,7 @@ from Adafruit_PWM_Servo_Driver import PWM
 import wiringpi as wpi
 from Tokens import MyHandler
 import math, numpy as np
-
+import threading, time, math
 
 
 
@@ -250,9 +250,74 @@ class changeHeading :
 
         
 
+class _Forward ( threading.Thread):
+
+    ticksPerFoot = 12.0*333.33/math.pi/2.5
+    def __init__(self, forward):
+        threading.Thread.__init__(self)
+        self.forward = forward
+        self.hBridge,self.leftTrack, \
+        self.rightTrack,self.distance = forward.args
+        self.busy = False
+        self.travelDistance = None
+        self.sleepTime = 0.1
+
+    def setDistance ( self, inDistance):
+        self.travelDistance = inDistance
+        deltaTick = float(inDistance) * float(_Forward.ticksPerFoot)
+        self.endDistance = self.distance.getValue()+ (deltaTick,deltaTick)
+        self.start()
 
 
 
+    def run (self ):
+        self.busy = True
+        state = 0
+        speedLeft, speedRight = 80,80 
+        self.leftTrack.setValue(speedLeft)
+        self.rightTrack.setValue(speedRight)
+        self.hBridge.setValue('forward')
+        while True:
+            d = self.distance.getValue()
+            dDist = self.endDistance - d
+            dLeft, dRight = dDist 
+            if dLeft <= 0:
+                state |= 1
+                self.leftTrack.setValue(0)
+            if dRight<= 0:
+                state |=2
+                self.rightTrack.setValue(0)
+            if state == 3:
+                break
+            time.sleep( self.sleepTime )
+
+        self.hBridge.setVal('off')
+
+        print "Forward Run Thread"
+        time.sleep(10)
+        self.busy = False
+        print "Forward Thread stop"
+
+
+class Forward:
+    def __init__(self, hBridge,leftTrack,rightTrack,distance):
+        self.args = ( hBridge,leftTrack,rightTrack,distance)
+        self.forward = None
+    
+    def run ( self, string, tokens):
+        try:
+            floatVal = tokens[1]
+        except:
+            return "Forward No Token"
+
+        if self.forward and self.forward.busy:
+            return "Forward Busy"
+            
+        self.forward = _Forward(self)
+        self.forward.setDistance ( floatVal)
+       
+        return "Forward Started"
+        
 
 def appendHwCommands( myHandler ):
 
@@ -283,7 +348,7 @@ def appendHwCommands( myHandler ):
     # Change heading by some number of degrees ( approximated)
     # We're in a stopped state.
     myHandler.addInstance ('changeheading', changeHeading(hBridge,leftTrack,rightTrack,distance))
-
+    myHandler.addInstance ('forward', Forward(hBridge,leftTrack,rightTrack,distance))
 
 
 
