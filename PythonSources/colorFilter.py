@@ -90,23 +90,23 @@ class ColorFilter:
     # Match the image by color values.
     # Return sets of contours associated with this image.
 
+    # We'll save a refrence to the BGR and HSV images
+    # so that they can be referenced by autocal routines
+    # in 'Runnable'
+
     def colorMatch ( self, bgrImage ):
 
         if self.doCalibrate:
             doCalibrate( self, bgrImage)
             self.doCalibrate = False
 
-
-
-
-
+    
         hsv = cv2.cvtColor ( bgrImage, self.colorCvtType )
         mask = cv2.inRange(hsv, self.lowColor, self.highColor)
+        self.bgrImage, self.hsvImage, self.mask = bgrImage, hsv , mask
+
         if self.doMask:
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, self.kernel)
-            #        cv2.imshow ( 'xx', mask)
-            #        cv2.waitKey(0)
-
 
         pString = self.pString
         if pString :
@@ -116,15 +116,11 @@ class ColorFilter:
             cv2.imwrite (pString+'maskImg.png', mask)
             self.pString = None
             
-
-
         if self.showMask:
             self.maskSave = mask.copy()
         _,contours,heirarchy = cv2.findContours(mask, 
                                                 cv2.RETR_TREE, 
                                                 cv2.CHAIN_APPROX_TC89_L1 )
-
- 
         return (contours, heirarchy)
 
 
@@ -132,20 +128,12 @@ class ColorFilter:
         c,h = self.colorMatch(bgrImage)
         self.contours, self.heirarchy = (c,h)
         if h is None: return 
-        
-        print "\n"
-
         for cIdx, hh in enumerate (h[0]) :
             
-            # m = cv2.moments(c[cIdx])
-            # weight = m['m00']
-            # if weight < 50:
-            #     continue
-            # x,y = m['m10']/weight, m['m01']/weight
-            # # print "X %f , Y %f , Weight %d" %(x,y,weight) 
-
+ 
             # Allow 15 degree angular differences.
             mar = cv2.minAreaRect(c[cIdx])
+            self.mar = mar
             angle = mar[2]
             if not -60 < angle < -30:
                 #print "Angle %f" % angle
@@ -176,19 +164,10 @@ class ColorFilter:
                 continue
 
 
-        
-            #print mar
-
-            # # Test top level to make sure that we're looking at a square shape.
-            # matchScore  = cv2.matchShapes( self.borderShape, c[cIdx], 1,0)
-            # #print ("Match Score is %f" % matchScore)
-
-
-            # if matchScore > self.borderMatchThreshold: 
-            #     continue
+ 
             cc = c[hh[2]]
-
             # This is a "have sign" case.
+            # This may be promicing for contrast adjustments.
             if len(cc) < self.minContourLength:
                 print "Not enough points in contour %d"% len(cc)
                 m = cv2.moments(c[cIdx])
@@ -203,7 +182,7 @@ class ColorFilter:
 
             moments = cv2.moments( cc )
             m = np.array((moments['nu30'], moments['nu03']))
-            # print "Normalized Central Moments : %f %f" % (moments['nu30'], moments['nu03'])
+
             scores = np.linalg.norm ( self.moments - m , axis = 1)
 
             idxMin = np.argmin ( scores ) 

@@ -10,15 +10,23 @@ class State:
 
     refImSize = np.array((640.0,480.0))
     halfSize = refImSize/2.0
-    #halfSize = np.array((320.0, 240.0))
     pixelDeltaXY = np.array( (10.0/116.0, -10.0/112.0))*.1
-    #pixelDeltaXY = np.array( (10.0/200.0, -10.0/200.0))*.1 
+
 
     def __init__(self, cf, handler):
         self.x, self.y = None, None 
         self.cf, self.handler = cf, handler
 
         self.panTiltTrack = True
+
+    # We'll use variables from cf, mainly
+    # bgrImage, hsv , mask and mar.
+    def calibrate (self):
+        pass
+
+
+
+
 
 
     def inContour ( self, contour ):
@@ -37,7 +45,7 @@ class State:
             dPT = (State.halfSize - self.xy)*State.pixelDeltaXY
             self.handler.getInstance('setpan').setValue(panV+dPT[0])
             self.handler.getInstance('settilt').setValue(tiltV+dPT[1])
-     
+        self.calibrate()
 
 
 class GetPosition:
@@ -45,10 +53,6 @@ class GetPosition:
         self.state = state
     def run( self,inString, tokens):
         return str( ( self.state.x, self.state.y))
-        
-
-
-        
 
 class Runnable :
     def __init__(self, string , state = None):
@@ -58,9 +62,9 @@ class Runnable :
     def run ( self, contour ) :
         self.state.inContour ( contour)
         m = cv2.moments(contour)
-        m00,m10,m01 = (m['m00'], m['m10'], m['m01'])
-        x,y = (m10/m00, m01/m00)
-        print ("Runnable String is %s X: %f Y : %f , W %f " % (self.idString,x,y,m00) )
+        m00,m10,m01 =m['m00'], m['m10'], m['m01']
+        x,y =m10/m00, m01/m00
+        print "Runnable String is %s X: %f Y : %f , W %f " % (self.idString,x,y,m00)
        
 
 

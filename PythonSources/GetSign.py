@@ -58,8 +58,6 @@ class MyFrame ( picamera.array.PiRGBAnalysis):
                 self.overlay.update(self.buf)
 
 
-
-
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="Sign Testbed")
@@ -100,6 +98,7 @@ if __name__ == '__main__':
         time.sleep(2)
         camera.shutter_speed = camera.exposure_speed
         camera.exposure_mode = 'off'
+        camera.iso=800
         g = camera.awb_gains
         camera.awb_mode = 'off'
         camera.awb_gains = g
@@ -120,13 +119,6 @@ if __name__ == '__main__':
     sensors.join()
 
     print "Finished"
-
-
-    # misc.imsave ('foo.png', output.hsvArray)  
-    # print "Counter is %d" % output.counter
-
-# leftTemplate.score ( output.edges ) 
-# misc.imshow(output.array)
 
 
 

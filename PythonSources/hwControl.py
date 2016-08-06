@@ -208,50 +208,46 @@ class _changeHeading( threading.Thread):
         self.newValue = newValue
 
     def run (self) :
-        if self.newValue < 180:
-            newValue = self.newValue
-            bridgeCommand = 'right'
-        else:
-            newValue = self.newValue -360
-            bridgeCommand ='left'
+        value = np.mod (self.newValue , 360.0)
+        value, bc = (value, 'left') if value < 180.0 else (value-360.0, 'right') 
+       
         curDistance = self.distance.getValue()
-        v = newValue * ticksPerDegree * _changeHeading.fudgeFactor
+        v = value * ticksPerDegree * _changeHeading.fudgeFactor
         targetDistance = curDistance + np.array((-1.0,1.0))* v
 
         self.busy = True
-        self.hBridge.setValue(bridgeCommand)
         condition = 0
         self.left.setValue (90)
         self.right.setValue(90)
+        self.hBridge.setValue(bc)
         while True :
-            curDistance = self.distance.getValue()
-            dLeft, dRight = curDistance - targetDistance
-            print "Dleft %f dRight %d, Cmd %s cond %d" %(dLeft,dRight, bridgeCommand, condition)
-            if bridgeCommand == 'left':
-                if dLeft > 0 and not condition & 1 :
+            dLeft, dRight = self.distance.getValue() - targetDistance
+            #print "Dleft %f dRight %d, Cmd %s cond %d" %(dLeft,dRight, bc, condition)
+            if bc == 'left':
+                if dLeft < 0 and not condition & 1 :
                     #print "Condition1"
                     self.hBridge.setValue('rightforward')
                     self.left.setValue(0)
                     condition |= 1
-                if dRight < 0 and not condition & 2  :
+                if dRight > 0 and not condition & 2  :
                     #print "Condition2"
                     self.hBridge.setValue('leftbackward')
                     self.right.setValue(0)
                     condition|= 2
             else:
-                if dLeft < 0 and not condition & 1:
+                if dLeft > 0 and not condition & 1:
                     #print "Condition3"
                     self.left.setValue(0)
                     self.hBridge.setValue('rightbackward')
                     condition |= 1
-                if dRight > 0 and not condition & 2 :
+                if dRight < 0 and not condition & 2 :
                     #print "Condition 4"
                     self.right.setValue(0)
                     self.hBridge.setValue('leftForward')
                     condition|= 2
             if condition == 3 :
                 break
-            time.sleep(.1)
+            time.sleep(0)
 
         print "Done"
         self.hBridge.setValue( 'off')
@@ -333,7 +329,8 @@ class _Forward ( threading.Thread):
                 speedRight -= deltaD
                 self.leftTrack.setValue(speedLeft)
                 self.rightTrack.setValue(speedRight)
-            time.sleep( self.sleepTime )
+            time.sleep(0)
+            # time.sleep( self.sleepTime )
 
         self.hBridge.setValue('off')
         self.busy = False
