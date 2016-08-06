@@ -8,6 +8,11 @@ import math, numpy as np
 import threading, time, math
 
 
+# Number of interrupts per inch traveled. (Measured)
+ticksPerInch = 9.5  
+radiusIn = 3.5
+degreesPerInch = 360.0/2/math.pi/radiusIn
+ticksPerDegree = ticksPerInch/degreesPerInch
 
 class Distance:
     # Counts per wheel revolution.
@@ -188,73 +193,95 @@ class motors:
 # changeHeading
 # We're stopped. Engage forward and reverse motors to change heading.
 
-class changeHeading :
+class _changeHeading( threading.Thread):
+    fudgeFactor = 2.2
+    def __init__(self, p):
+        threading.Thread.__init__(self)
+        self.busy = False
+        self.p = p  # Parent.
 
-    
-    ticksPerInch = 42.44
-    scaleFactor = 20.0
+        self.hBridge, self.left = p.hBridge, p.left 
+        self.right, self.distance =  p.right, p.distance
+                                                            
 
-    def __init__(self, hBridge, left, right, distance ):
-        self.hBridge , self.left, self.right, self.distance   = hBridge, left, right, distance
+    def setValue (self, newValue):
+        self.newValue = newValue
 
-    def setValue ( self, newValue ) :
-        newValue = newValue if newValue < 180 else newValue - 360 
-        scaleValue = float(newValue)/360.0*changeHeading.scaleFactor
-        self.left.setValue(0)         # Turn off motors.
-        self.right.setValue(0)        #
+    def run (self) :
+        if self.newValue < 180:
+            newValue = self.newValue
+            bridgeCommand = 'right'
+        else:
+            newValue = self.newValue -360
+            bridgeCommand ='left'
         curDistance = self.distance.getValue()
-        
-       
-        bridgeCommand = 'left'  if newValue > 0 else 'right'
-        targetDistance = curDistance + np.array(( -changeHeading.ticksPerInch, changeHeading.ticksPerInch)) * scaleValue
+        v = newValue * ticksPerDegree * _changeHeading.fudgeFactor
+        targetDistance = curDistance + np.array((-1.0,1.0))* v
 
-        # print ("Scale Value %f" % scaleValue)
-        # print ("Cur Distance %s"% curDistance)
-        # print ("Target  Distance %s"% targetDistance)
-
-            
+        self.busy = True
         self.hBridge.setValue(bridgeCommand)
-        # Poll until we've met the conditions.
         condition = 0
         self.left.setValue (90)
         self.right.setValue(90)
-
-   
-        while condition != 3 :
+        while True :
             curDistance = self.distance.getValue()
-            # print "Cur Distance %s Target Distance %s "% (curDistance, targetDistance)
+            dLeft, dRight = curDistance - targetDistance
+            print "Dleft %f dRight %d, Cmd %s cond %d" %(dLeft,dRight, bridgeCommand, condition)
             if bridgeCommand == 'left':
-                if curDistance [0] <= targetDistance[0]:
+                if dLeft > 0 and not condition & 1 :
                     #print "Condition1"
                     self.hBridge.setValue('rightforward')
                     self.left.setValue(0)
                     condition |= 1
-                if curDistance[1] >= targetDistance[1]:
+                if dRight < 0 and not condition & 2  :
                     #print "Condition2"
                     self.hBridge.setValue('leftbackward')
                     self.right.setValue(0)
                     condition|= 2
             else:
-                if curDistance [0] >= targetDistance[0]:
+                if dLeft < 0 and not condition & 1:
                     #print "Condition3"
                     self.left.setValue(0)
                     self.hBridge.setValue('rightbackward')
                     condition |= 1
-                if curDistance[1] <= targetDistance[1]:
+                if dRight > 0 and not condition & 2 :
                     #print "Condition 4"
                     self.right.setValue(0)
                     self.hBridge.setValue('leftForward')
                     condition|= 2
- 
+            if condition == 3 :
+                break
+            time.sleep(.1)
 
-
+        print "Done"
+        self.hBridge.setValue( 'off')
         self.right.setValue(0)
         self.left.setValue(0)
-        self.hBridge.setValue( 'off')
-        
+        self.busy = False
+
+
+class changeHeading :
+    def __init__(self, hBridge, left, right, distance ):
+        self.hBridge , self.left, self.right, self.distance = \
+                            hBridge, left, right, distance
+        self.changeHeading = None
+
+    def setValue ( self, newValue ) :
+        self.changeHeading = _changeHeading( self )
+        self.changeHeading.setValue( newValue)
+        self.changeHeading.run()
+
     def run ( self,inString, tokens):
-        self.setValue ( int(tokens[1]))
-        return "Finished"
+        if  self.changeHeading and self.changeHeading.busy:
+            return "ChangeHeading busy"
+        try :
+            value = float(tokens[1])
+        except:
+            return "Invalid Heading"
+        self.setValue ( value)
+        return "Started Heading Thread"
+
+        
 
         
 
@@ -269,7 +296,7 @@ class _Forward ( threading.Thread):
         self.busy = False
         self.travelDistance = None
         self.sleepTime = 0.1
-        self.trackGain = .001
+        self.trackGain = .005
 
     def setDistance ( self, inDistance):
         self.travelDistance = inDistance
@@ -306,14 +333,9 @@ class _Forward ( threading.Thread):
                 speedRight -= deltaD
                 self.leftTrack.setValue(speedLeft)
                 self.rightTrack.setValue(speedRight)
-                #print "Speed Left %f, speedRight %f, dletaD %f dLeft %d dRight %d" %(speedLeft,speedRight,deltaD,dLeft,dRight)
-
             time.sleep( self.sleepTime )
 
         self.hBridge.setValue('off')
-
-        print "Forward Run Thread"
-        time.sleep(10)
         self.busy = False
         print "Forward Thread stop"
 

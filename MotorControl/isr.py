@@ -87,10 +87,6 @@ LEFTBACKWARD = _isr.LEFTBACKWARD
 def setDir(*args):
   return _isr.setDir(*args)
 setDir = _isr.setDir
-
-def setMPins(p0=17, p1=18, p2=27, p3=22):
-  return _isr.setMPins(p0, p1, p2, p3)
-setMPins = _isr.setMPins
 class isr(_object):
     __swig_setmethods__ = {}
     __setattr__ = lambda self, name, value: _swig_setattr(self, isr, name, value)
@@ -128,7 +124,6 @@ class isr(_object):
     def getDistance(self): return _isr.isr_getDistance(self)
     def testCallback(self): return _isr.isr_testCallback(self)
     def _phaseA(self): return _isr.isr__phaseA(self)
-    def _phaseB(self, *args): return _isr.isr__phaseB(self, *args)
     def setCallback(self, *args): return _isr.isr_setCallback(self, *args)
     __swig_destroy__ = _isr.delete_isr
     __del__ = lambda self : None;

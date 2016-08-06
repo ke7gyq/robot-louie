@@ -22,14 +22,14 @@ void setup( int priority ) {
 }
 
 int mPins[4] = { 17,18, 27,22 };
-// Set the motor pins.
-void setMPins ( int p0,int p1, int p2, int p3){
-  // mPins[0] = p0; mPins[1] = p1; mPins[2] =p2, mPins[3] = p3;
-  pinMode( mPins[0] = p0 , OUTPUT);
-  pinMode( mPins[1] = p1 , OUTPUT);
-  pinMode( mPins[2] = p2 , OUTPUT);
-  pinMode( mPins[3] = p3 , OUTPUT);
-}
+// // Set the motor pins.
+// static void setMPins ( int p0,int p1, int p2, int p3){
+//   // mPins[0] = p0; mPins[1] = p1; mPins[2] =p2, mPins[3] = p3;
+//   pinMode( mPins[0] = p0 , OUTPUT);
+//   pinMode( mPins[1] = p1 , OUTPUT);
+//   pinMode( mPins[2] = p2 , OUTPUT);
+//   pinMode( mPins[3] = p3 , OUTPUT);
+// }
 
 void setPins ( const int * pDir) {
   digitalWrite(mPins[0], pDir[0]);
@@ -37,6 +37,9 @@ void setPins ( const int * pDir) {
   digitalWrite(mPins[2], pDir[2]);
   digitalWrite(mPins[3], pDir[3]);
 }
+
+static int dirs [2] = { 0, 0};
+
 
 void setDir (MDIR dir ) {
   static const int forward[] = { 0, 1, 0 , 1 };
@@ -53,42 +56,48 @@ void setDir (MDIR dir ) {
 
   
   switch (dir){
-  case FORWARD: setPins(forward); break;
-  case BACKWARD:setPins(reverse); break;
-  case RIGHT: setPins(right); break;
-  case LEFT: setPins(left); break;
+  case FORWARD: setPins(forward); dirs[0]=dirs[1]=1 ;break;
+  case BACKWARD:setPins(reverse); dirs[0]=dirs[1]=-1;break;
+  case RIGHT: setPins(right); dirs[0]=-1; dirs[1]=1; break;
+  case LEFT: setPins(left); dirs[0]=1; dirs[1]=-1 ; break;
 
-  case RIGHTFORWARD:  setPins(rightForward); break; 
-  case RIGHTBACKWARD:setPins(rightBackward); break; 
-  case LEFTFORWARD:  setPins(leftForward); break; 
-  case LEFTBACKWARD: setPins(leftBackward); break;
+  case RIGHTFORWARD:  setPins(rightForward); dirs[0]=1;dirs[1]=0 ;break; 
+  case RIGHTBACKWARD:setPins(rightBackward); dirs[0]=-1;dirs[1]=0;break; 
+  case LEFTFORWARD:  setPins(leftForward); dirs[0] =0; dirs[1]=1; break; 
+  case LEFTBACKWARD: setPins(leftBackward);dirs[0] =0; dirs[1]=-1; break;
 
   case OFF:
   default: 
     setPins( stop); 
+    dirs[0]=dirs[1] = 0;  
     break;
   }
 }
 
 
 
-isr * rIsr[2] ;
-void int0 () {
+static isr * rIsr[2] ;
+static void int0 () {
   // printf ("Int     0\n");
   rIsr[0]->_phaseA();
 }
-void int1 () {
+
+#if(0)
+static void int1 () {
   // printf ("Int     1\n");
   rIsr[0]->_phaseB();
 }
-void int2 () {
+#endif
+static void int2 () {
   // printf ("Int2 \n");
   rIsr[1]->_phaseA();
 }
-void int3 () {
+#if(0)
+static void int3 () {
   // printf ("Int3 \n");
   rIsr[1]->_phaseB();
 }
+#endif
 
 isr::isr(int phaseA,int phaseB, int isrNo ){
   this->phaseA = phaseA;
@@ -99,6 +108,7 @@ isr::isr(int phaseA,int phaseB, int isrNo ){
   upCtr=dnCtr=distance = 0;
 
   rIsr[isrNo] = this;
+
   pinMode ( phaseA, INPUT);
   pinMode ( phaseB, INPUT);
   // wiringPiISR( phaseA, INT_EDGE_BOTH, isrNo ? &int2 : &int0);
@@ -122,24 +132,39 @@ int isr::getDistance() {
 Interrupts now occur on falling edge of 
 phase A
 
-Make sure that the edge is teill low.
+Base increment or decrement on the H bridge setting.
 */
 
+
 void isr::_phaseA(void){
-  int s1 = digitalRead(phaseA);
+  int delta = dirs[isrNo];
+  int s1 = digitalRead(phaseA) ? 1 : 0;
   if ( ! s1) {
-     int s2 = digitalRead(phaseB);
-     distance += s1 == s2 ? -1 : 1 ;
+    distance += delta;
+    // distance += digitalRead(phaseB) ? -1:1;
+    //distance += s1 == s2 ? -1 : 1 ;
   }
 }
 
-void isr::_phaseB(void){
+
+#if (0)
+static void isr::_phaseA(void){
+  int s1 = digitalRead(phaseA);
+  if ( ! s1) {
+    int s2 = digitalRead(phaseB);
+    distance += s1 == s2 ? -1 : 1 ;
+  }
+}
+
+// NotReached...
+static void isr::_phaseB(void){
   int s2 = digitalRead(phaseB);
   if ( ! s2 ){
      int s1 = digitalRead(phaseA);
      distance += s1 == s2 ? 1 : -1;
   }
 }
+#endif
 
 
 
