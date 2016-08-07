@@ -1,18 +1,10 @@
-#!/usr/bin/python
-# Controller.py. Provide controller gui for robot interfaces
+# Joystick.py. Provide controller gui for robot interfaces
 
-joystickPort = '/dev/input/js0'
 import cv2, math,numpy as np
 import time,socket, sys, os
-import threading
-import pygame
-
-import argparse
-
-from contextlib import contextmanager
+import threading,pygame
 
 
-port=2000
 class RobotClient (threading.Thread):
     def __init__(self, ip='happy.local', port=1857 ):
         threading.Thread.__init__(self)
@@ -29,11 +21,13 @@ class RobotClient (threading.Thread):
         
     def send (self, string ):
         print ("Robot Sending String %s" %string)
+        self.rxBuffers = list()
         if len(string):
             sent = self.socket.send( string)
             # time.sleep(.3)
             if sent == 0 :  # Other side closed socket.
                 raise RuntimeError("Socked connection Closed")
+
 
     def done(self):
         self.done= True
@@ -72,24 +66,24 @@ class AxisMotion:
         flagUD = np.abs(deltaUD) > .1
         if self.state == 'off' and flagUD :
             if deltaUD >0:
-                robot.send( 'setgear forward\n')
+                self.robot.send( 'setgear forward\n')
                 self.state = 'forward'
             else:
-                robot.send( 'setgear reverse\n')
+                self.robot.send( 'setgear reverse\n')
                 self.state = 'reverse'
         elif self.state == 'forward' and flagUD :
             if -.1 < ud < .1 :
-                robot.send('setgear off')
+                self.robot.send('setgear off')
                 self.state = 'off'
             elif ud < 0:
-                robot.send( 'setgear reverse\n')
+                self.robot.send( 'setgear reverse\n')
                 self.state = 'reverse'
         elif self.state == 'reverse' and flagUD:
             if -.1 < ud <.1 :
-                robot.send('setgear off')
+                self.robot.send('setgear off')
                 self.state = 'off'
             elif ud > 0:
-                robot.send('setgear forward\n')
+                self.robot.send('setgear forward\n')
                 self.state = 'forward'
 
     def setVal( self, arr ):
@@ -102,8 +96,8 @@ class AxisMotion:
             aud = ud if ud >0 else -ud         # This is a value between 0 and 1.
             valueL = (1.0 +lr) * aud * 100.0/2
             valueR = (1.0-lr) * aud * 100.0/2
-            robot.send ("setleft %d\n"%valueL)
-            robot.send( "setright %d\n" % valueR)
+            self.robot.send ("setleft %d\n"%valueL)
+            self.robot.send( "setright %d\n" % valueR)
             self.ud , self.lr = ud,lr
 
 
@@ -122,12 +116,12 @@ class AxisState :
         if np.abs(lr-self.lr) >.1:
             self.lr = lr
             string = "%s %d\n" %(self.ax1State, (lr + .5 ) * 100.0)
-            robot.send( string ) 
+            self.robot.send( string ) 
 
         if np.abs(ud-self.ud) >.1:
             self.ud = ud
             string = "%s %d\n" %(self.ax2State, (ud + .5 ) * 100.0)
-            robot.send( string ) 
+            self.robot.send( string ) 
 
 
 
@@ -150,12 +144,6 @@ class JsHandler ( threading.Thread):
         except:
             print "Action for Key %s not found" % key 
             return None
-
-
-    def fireAction (self,key):
-        instance = self.getAction( key)
-        if instance:
-            instance.run(self)
 
     # We 'know' that we only have one joystick.
     def run(self):
@@ -182,7 +170,23 @@ class JsHandler ( threading.Thread):
             clock.tick(1)
         pygame.quit()
 
+
+# Factory method to create joystick handlers.
+# Handlers need a robot to operate against.
+def initJsHandler( robot ):
+    jsHandler = JsHandler()
+    jsHandler.addAction ( 'axis1',  AxisMotion( robot))
+    jsHandler.addAction ( 'axis2', AxisState('setpan', 'settilt', robot, (-1.0, 1.0)))
+    return jsHandler
+
+
+
+
+
+
 if __name__ == '__main__':
+    import pygame
+
     parser = argparse.ArgumentParser(description="Louie Control Program")
     parser.add_argument('--ipaddress', help="Robot host name", default = 'happy.local')
     parser.add_argument('--port', help = "Port Number", type=int, default ='1857')
@@ -194,8 +198,6 @@ if __name__ == '__main__':
     robot.start()
     
     handler = JsHandler( )
-    handler.addAction ( 'axis1',  AxisMotion( robot))
-    handler.addAction ( 'axis2', AxisState('setpan', 'settilt', robot, (-1.0, 1.0)))
     handler.start()
 
     handler.join()

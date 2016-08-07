@@ -1,0 +1,10 @@
+Notes.txt.
+
+Sending data from Raspberry pi.
+raspivid -w 640 -h 480 -t 60000 -o - | nc -l 8000
+
+Receiving it in decent time on the PC:
+ nc happy 8000 | mplayer -benchmark -fps 31 -cache 1024 -
+
+http://fomori.org/blog/?p=1213
+
