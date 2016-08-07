@@ -4,6 +4,7 @@
 
 from VideoClient import VideoClient
 from Joystick import RobotClient,  initJsHandler
+from Widgets import initWidgets
 import argparse
 import time
 
@@ -27,8 +28,19 @@ if __name__ == '__main__':
     vc = VideoClient( )
     vc.setVideoPramaters(args.ipaddress, int(rxStringPortNumber))
     vc.start()
+
+    # Start the Joystick handler.
     jsHandler = initJsHandler( robot )
     jsHandler.start()
+ 
+
+
+    # Start the widget handler
+    widgets = initWidgets(robot)
+    widgets.start()
+    
+
+    widgets.join()
     jsHandler.join()
     robot.join()
     vc.join()
