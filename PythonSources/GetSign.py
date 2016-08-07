@@ -58,11 +58,34 @@ class MyFrame ( picamera.array.PiRGBAnalysis):
                 self.overlay.update(self.buf)
 
 
-
-
-        
+# Message handlers for the camera.
+# 
+class GetCameraScales:
+    def __init__ ( self, camera ):
+        self.camera = camera
+    def run( self,string, tokens ):
+        rGain , bGain = self.camera.awb_gains
+        iso = self.camera.iso
+        return '[%f %f %f]' % (rGain, bGain, iso)
     
+class SetCameraScales:
+    def __init__ (self, camera):
+        self.camera = camera
+    def run(self,sting, tokens):
+        try:
+            rGain = float(tokens[1])
+            bGain = float(tokens[2])
+            iso   = int(tokens[3])
+            
+            self.camera.awb_gains = ( rGain, bGain)
+            self.camera.iso = iso
+        except:
+            return "Could not assign camera values"
+        return "Ok"
 
+def initCameraMessages( handler , camera):
+    handler.addInstance('getcamerascales', GetCameraScales(camera))
+    handler.addInstance('setcamerascales', SetCameraScales(camera))
 
 
 
@@ -103,6 +126,7 @@ if __name__ == '__main__':
     
     
     with picamera.PiCamera()  as camera:
+        initCameraMessages( myHandler , camera)
         camera.resolution = (cf.imageSize )
         #camera.start_preview()
         time.sleep(2)
