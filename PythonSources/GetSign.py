@@ -7,9 +7,9 @@ from hwControl import appendHwCommands
 from MsgHandler import  MsgHandler
 from Tokens import getMyHandler
 from Runnable import initializeRunnable
-
+from VideoServer import initVideoServer
 import cv2, numpy as np
-import sys,time
+import sys,time,socket
 
 import picamera, picamera.array
 
@@ -58,6 +58,15 @@ class MyFrame ( picamera.array.PiRGBAnalysis):
                 self.overlay.update(self.buf)
 
 
+
+
+        
+    
+
+
+
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="Sign Testbed")
@@ -65,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument ('--showHSV', help='showHSV frame', default='n')
     parser.add_argument ('--showMask', help='Show mask option', default='n')
     parser.add_argument ('--pramFile', help='xmlPramaterFile', default='vidParms.xml')
-    parser.add_argument ('--runtime', help='Running Time(sec)', type=int, default='3600')
+    parser.add_argument ('--runtime', help='Running Time(sec)', type=int, default='3000')
     parser.add_argument ('--port', help = "Open server port ", type=int, default='1857')
     args = parser.parse_args()
  
@@ -86,6 +95,7 @@ if __name__ == '__main__':
     myHandler.fromXML ( args.pramFile )  # Read in any XLM pramaters.
 
     msgHandler = MsgHandler()
+    vs = initVideoServer(myHandler)
     msgHandler.portNumber = args.port
 
     msgHandler.setHandler(myHandler)
@@ -99,16 +109,17 @@ if __name__ == '__main__':
         camera.shutter_speed = camera.exposure_speed
         camera.exposure_mode = 'off'
         camera.iso=800
-        g = camera.awb_gains
         camera.awb_mode = 'off'
-        camera.awb_gains = g
+        camera.awb_gains = (255.0/242.0, 0)
 
-
+       
+        camera.start_recording(vs, format='h264', splitter_port=2)
         with MyFrame (camera, camera.resolution ) as output:
             myHandler.myFrame  = output
             output.showHSV = args.showHSV =='y'
             output.setColorFilter(cf)
             camera.start_recording(output, 'rgb')
+
             camera.wait_recording(args.runtime)
             camera.stop_recording()
 
@@ -117,6 +128,7 @@ if __name__ == '__main__':
     msgHandler.stop()
     msgHandler.join()
     sensors.join()
+    vs.join()
 
     print "Finished"
 
