@@ -8,8 +8,9 @@ from MsgHandler import  MsgHandler
 from Tokens import getMyHandler
 from Runnable import initializeRunnable
 from VideoServer import initVideoServer
+
 import cv2, numpy as np
-import sys,time,socket
+import sys,time,socket, threading
 
 import picamera, picamera.array
 
@@ -105,6 +106,44 @@ class GetParseImage:
         return "%s\n" % 'y' if  self.myFrame.parseImage  else 'n'
      
 
+class RecordThread ( threading.Thread ):
+    def __init__(self, r264) :
+        threading.Thread.__init__(self)
+        self.r264 = r264
+        self.busy = False
+    def run (self):
+        self.busy = True
+        p = self.r264
+        camera,filename, time = p.camera, p.filename, p.time
+        print "Start Recording %s %d" %(filename, time)
+        camera.start_recording(filename, format='h264', splitter_port=3)
+        camera.wait_recording(time)
+        camera.stop_recording(splitter_port=3)
+        self.busy =False
+
+
+class RecordH264:
+    def __init__(self, camera):
+        self.camera = camera
+        self.filename, self.time = None, None
+        self.RecordThread = None
+    def run( self, string, tokens):
+        try:
+            self.filename = tokens[1]
+            self.time  = int(tokens[2]) 
+        except:
+            return "error"
+        if self.RecordThread and self.RecordThread.busy == True:
+            return "busy"
+            
+        self.RecordThread = RecordThread( self)
+        self.RecordThread.start()
+        return "Recording"
+
+            
+           
+
+
 
 
 
@@ -115,6 +154,7 @@ def initFrameHandler( handler, myFrame):
 def initCameraMessages( handler , camera):
     handler.addInstance('getcamerascales', GetCameraScales(camera))
     handler.addInstance('setcamerascales', SetCameraScales(camera))
+    handler.addInstance('recordh264', RecordH264(camera))
 
 
 
