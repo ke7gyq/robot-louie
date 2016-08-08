@@ -59,38 +59,35 @@ class AxisMotion:
         self.lr , self.ud = 0.0, 0.0
         self.robot = robot
         self.state = 'off'
-
+        self.delta = 0.01
+        
     # State machine to determine direction of tracks.
     def stateTest(self, lr, ud ):
         deltaUD = self.ud -ud 
-        flagUD = np.abs(deltaUD) > .1
-        if self.state == 'off' and flagUD :
-            if deltaUD >0:
-                self.robot.send( 'setgear forward\n')
-                self.state = 'forward'
+        flagUD = np.abs(deltaUD) > self.delta
+
+        if  abs(ud) <= self.delta :
+            if self.state != 'off':
+                self.robot.send('setgear off\n')
+                self.state = 'off'
             else:
-                self.robot.send( 'setgear reverse\n')
+                return
+
+        if abs(ud) > self.delta:
+            if self.state != 'reverse' and ud > 0 :
+                self.robot.send('setgear reverse\n')
                 self.state = 'reverse'
-        elif self.state == 'forward' and flagUD :
-            if -.1 < ud < .1 :
-                self.robot.send('setgear off')
-                self.state = 'off'
-            elif ud < 0:
-                self.robot.send( 'setgear reverse\n')
-                self.state = 'reverse'
-        elif self.state == 'reverse' and flagUD:
-            if -.1 < ud <.1 :
-                self.robot.send('setgear off')
-                self.state = 'off'
-            elif ud > 0:
+                return
+            if self.state != 'forward' and ud < 0 :
                 self.robot.send('setgear forward\n')
                 self.state = 'forward'
+
 
     def setVal( self, arr ):
         lr, ud = arr 
         deltaUD = ud - self.ud 
-        flagUD = np.abs(deltaUD) > .1
-        flagLR = np.abs(lr-self.lr) >.1
+        flagUD = np.abs(deltaUD) > self.delta
+        flagLR = np.abs(lr-self.lr) > self.delta
         if flagUD or flagLR:
             self.stateTest( lr,ud)             # Figure out which gear to set the robot to.
             aud = ud if ud >0 else -ud         # This is a value between 0 and 1.
@@ -109,16 +106,16 @@ class AxisState :
         self.lr, self.ud  = 0.0, 0.0
         self.dl , self.du = direction
         self.ax1State , self.ax2State, self.robot = ax1State, ax2State, robot
-
+        self.delta =.01
     def setVal( self, arr ):
         lr,ud = arr
         lr *= self.dl; ud *= self.du
-        if np.abs(lr-self.lr) >.1:
+        if np.abs(lr-self.lr) > self.delta:
             self.lr = lr
             string = "%s %d\n" %(self.ax1State, (lr + .5 ) * 100.0)
             self.robot.send( string ) 
 
-        if np.abs(ud-self.ud) >.1:
+        if np.abs(ud-self.ud) >self.delta:
             self.ud = ud
             string = "%s %d\n" %(self.ax2State, (ud + .5 ) * 100.0)
             self.robot.send( string ) 
@@ -167,7 +164,7 @@ class JsHandler ( threading.Thread):
             self.getAction('axis1').setVal(values[0])
             self.getAction('axis2').setVal(values[1])
 
-            clock.tick(1)
+            clock.tick(10)
         pygame.quit()
 
 

@@ -31,6 +31,29 @@ def stringToFloatTriplet(string):
     return mapValue
     
 
+# FIXME...
+# Tinker's fighting me...
+# Want to implement commands that toggle
+# on  / off the camer following  code 
+# in the robot.
+class Booleans :
+    def __init__(self, master, robot):
+        self.master , self.robot = master, robot
+        self.parseImageState = master.IntVar()
+
+        topFrame = Frame (master)
+        topFrame.pack()
+        self.parseImage = Checkbutton ( topFrame, text = "Follow Targets", 
+                                        command=self.setParseImage,
+                                        variable=self.ParseImageState)
+        self.parseImage.pack()
+        
+
+    def setParseImage ( self , event ):
+        print "Variable is " , self.parseImage.get()
+
+    
+
 
 class CameraGains:
     def __init__(self, master, robot):
@@ -133,7 +156,8 @@ class ColorBallance:
         for v,o in zip ( valsHigh, self.highScales):
             o.set(v)
 
-
+# Fixme.
+# Fix the booleans.
 class Widgets(threading.Thread):
     def __init__ (self, robot ):
         threading.Thread.__init__(self)
@@ -143,6 +167,7 @@ class Widgets(threading.Thread):
         master = Tk()
         cb = ColorBallance(master, self.robot)
         cg = CameraGains( master, self.robot)
+        # cBool = Booleans(master, self.robot)
         master.mainloop()
 
 def initWidgets ( robot ) :
