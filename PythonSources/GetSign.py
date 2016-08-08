@@ -33,6 +33,7 @@ class MyFrame ( picamera.array.PiRGBAnalysis):
         
         self.colorFilter = None
         self.showHSV = False
+        self.parseImage = True
 
     def setColorFilter ( self, colorFilter) :
         print ("Set Color Filter called")
@@ -45,8 +46,9 @@ class MyFrame ( picamera.array.PiRGBAnalysis):
         if self.showHSV:
             showHSVImage ( array, cv2.COLOR_RGB2HSV )
 
-        if self.colorFilter:           
-            self.colorFilter.parseImage ( array  )
+        if self.colorFilter:
+            if self.parseImage:
+                self.colorFilter.parseImage ( array  )
             if self.colorFilter.showMask:
                 mask = self.colorFilter.maskSave
                 if len(mask.shape) == 2 :
@@ -82,6 +84,33 @@ class SetCameraScales:
         except:
             return "Could not assign camera values"
         return "Ok"
+
+
+# Enale / disable the camera following an image.
+class SetParseImage:
+    def __init__(self, myFrame):
+        self.myFrame = myFrame
+    def run( self, string, tokens):
+        try:
+            flag = tokens[1] == 'y'
+            self.myFrame.parseImage = flag
+        except:
+            pass
+        return "%s\n" % 'y' if  self.myFrame.parseImage  else 'n'
+
+class GetParseImage:
+    def __init__(self, myFrame):
+        self.myFrame = myFrame
+    def run( self, string, tokens):
+        return "%s\n" % 'y' if  self.myFrame.parseImage  else 'n'
+     
+
+
+
+
+def initFrameHandler( handler, myFrame):
+    handler.addInstance ('setparseimage', SetParseImage(myFrame))
+    handler.addInstance ('getparseimage', GetParseImage(myFrame))
 
 def initCameraMessages( handler , camera):
     handler.addInstance('getcamerascales', GetCameraScales(camera))
@@ -139,6 +168,7 @@ if __name__ == '__main__':
        
         camera.start_recording(vs, format='h264', splitter_port=2)
         with MyFrame (camera, camera.resolution ) as output:
+            initFrameHandler( myHandler, output)
             myHandler.myFrame  = output
             output.showHSV = args.showHSV =='y'
             output.setColorFilter(cf)

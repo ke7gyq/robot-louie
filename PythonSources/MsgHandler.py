@@ -81,12 +81,16 @@ class MsgHandler (threading.Thread):
                     message_queues[connection] = Queue.Queue()
                 else:
                     data = s.recv(1024)
+                    #print "Data is %s" %data
                     if data:
-                        reply = self.handler.run ( data )
-                        if reply:
-                            message_queues[s].put(reply)
-                            if s not in outputs:
-                                outputs.append(s)
+                        for line in data.split('\n'):
+                            # print 'InLine is  ->%s<-' %line
+                            if len(line):
+                                reply = self.handler.run ( line )
+                                if reply:
+                                    message_queues[s].put(reply)
+                                    if s not in outputs:
+                                        outputs.append(s)
                     else:
                         # Interpret empty result as closed connection
                         #print >>sys.stderr, 'closing', client_address, 'after reading no data'
