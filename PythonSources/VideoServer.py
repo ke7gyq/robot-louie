@@ -27,12 +27,14 @@ _videoServer = None
 class ServerInstance(SocketServer.StreamRequestHandler):    
     def handle( self ) :
         _videoServer.add (self)
-        while True:
-            self.data = self.rfile.readline()
-            if self.data == '' :
-                break
-        self.rfile.close()
-        _videoServer.remove(self)
+        try:
+            while True:
+                self.data = self.rfile.readline()
+                if self.data == '' :
+                    break
+        finally:
+            self.rfile.close()
+            _videoServer.remove(self)
     def write ( self, data ):
         self.wfile.write ( data )
 
