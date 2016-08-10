@@ -51,7 +51,7 @@ class VideoServer  :
         _videoServer = self
         
         self.connections = list()
-        self.port = 8000
+        self.portNumber = 8000
         self.host =  getPreferredIp()
 
         self.server = None
@@ -75,7 +75,7 @@ class VideoServer  :
 
 
     def start ( self ):
-        self.server = ThreadedTCPServer ((self.host,self.port),  ServerInstance)
+        self.server = ThreadedTCPServer ((self.host,self.portNumber),  ServerInstance)
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.daemon=True
         self.server_thread.start()
