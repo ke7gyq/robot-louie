@@ -187,7 +187,7 @@ class TakePictures:
             self.cf.pString = tokens[1]
             return 'Ok'
         except:
-            self.cv.pString = None
+            self.cf.pString = None
             return 'No Filename'
 
 class Calibrate:

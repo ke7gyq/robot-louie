@@ -1,7 +1,5 @@
-import socket
-import threading
 import netifaces
-import time
+import SocketServer,threading
 
 # Network stream object.
 # Open a server to send bytes to clients.
@@ -21,67 +19,76 @@ def getPreferredIp( ) :
             raise ValueError ("No Interface found")
   
 
-# Not clear how to set the port number...
+_videoServer = None
 
-class VideoServer (threading.Thread):
-    def __init__ (self, myHandler):
-        threading.Thread.__init__(self)
-        self.myHandler = myHandler
-        self.maxConnections = 5
-        self.portNumber = 8000
-    
-        self.connection = None
-        self.stopFlag = False
-        self.haveData = False
-        self.haveConnection = False
+
+# Thread created when a new connection is made to the socket.
+# The write method sends data to the client connection. (We're the server)
+class ServerInstance(SocketServer.StreamRequestHandler):    
+    def handle( self ) :
+        _videoServer.add (self)
+        while True:
+            self.data = self.rfile.readline()
+            if self.data == '' :
+                break
+        self.rfile.close()
+        _videoServer.remove(self)
+    def write ( self, data ):
+        self.wfile.write ( data )
+
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
+
+# The camera calls this when it has new data to transmit to the
+# attached clients. 
+# Note that this is a singleton.
+#
+class VideoServer  :
+    def __init__ ( self ):
+        global _videoServer
+        if _videoServer:
+            raise ValueError ("Video Server already created")
+        _videoServer = self
         
+        self.connections = list()
+        self.port = 8000
+        self.host =  getPreferredIp()
 
-    # Need to re-think this logic.
-    # Note that we're giving away our connecton.
-    def  run (self):
-        preferredIp = getPreferredIp()
-        server = socket.socket( socket.AF_INET, socket.SOCK_STREAM)
-        server.bind((preferredIp, self.portNumber))
-        server.listen( self.maxConnections)
-  
-        client, address = server.accept()
+        self.server = None
+        self.server_thread = None
+    
+    # Broadcast data to connections.
+    def write (self,data):
+        for c in self.connections:
+            try:
+                c.write( data )
+            except:
+                pass
+                
+    # Remove connection from list.
+    def remove ( self, connection):
+        self.connections.remove (connection)
 
-
-        connection = client.makefile('wb')
-        self.connection = connection
-        self.haveConnection = True
-        while not self.stopFlag:
-            #print "In Run Loop"
-            # Need some form of mutex object here...
-            if self.haveData:
-                connection.write( data )
-            time.sleep(.1)
-
-        self.haveConnection = False
-        connection.close()
-        server.close()
-        client.close()
+    # Add connection to list
+    def add ( self, connection):
+        self.connections.append(connection)
 
 
-    # Fixme. This really doesn't work.
-    def close(self):
-        self.stopFlag = True
+    def start ( self ):
+        self.server = ThreadedTCPServer ((self.host,self.port),  ServerInstance)
+        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        self.server_thread.daemon=True
+        self.server_thread.start()
 
-    def write ( self, data ) :
-        # print "Spooling Data for write"
-        # Need mutex here.
-        if self.haveConnection:
-            self.connection.write (data)
-            # self.data = data.copy()
-            # self.haveData = True
+    # Not implemented.
+    def finish ( self):
+        pass
 
 class GetVsPort:
     def __init__(self, vs ):
         self.vs = vs
     def run ( self, string , tokens ) :
         return str(self.vs.portNumber)
-
-
 
 class SetVsPort:
     def __init__(self, vs ):
@@ -94,13 +101,8 @@ class SetVsPort:
             pass
         return str(self.vs.portNumber)
 
-
-        
-    
-
-
 def initVideoServer( myHandler ):
-    vs = VideoServer ( myHandler ) 
+    vs = VideoServer (  ) 
     myHandler.addInstance ( 'getvsport' , GetVsPort (vs))
     myHandler.addInstance ( 'setvsport' , SetVsPort (vs))
     vs.start()
