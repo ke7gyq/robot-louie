@@ -2,11 +2,10 @@
 # Gui interface files
 
 from Tkinter import *
-import threading
-import time
+import time, sys
 
-
-master = Tk()
+if not 'master' in globals():
+    master = Tk()
 
 # Query the robot for a value.
 # 
@@ -29,28 +28,22 @@ def stringToFloatTriplet(string):
     mapValue = map (float, string[1:-1].split())
     print "Map Value %s, String %s" % (mapValue, string)
     return mapValue
-    
 
-# FIXME...
-# Tinker's fighting me...
-# Want to implement commands that toggle
-# on  / off the camer following  code 
-# in the robot.
 class Booleans :
     def __init__(self, master, robot):
         self.master , self.robot = master, robot
-        self.parseImageState = master.IntVar()
+        self.parseImageState = IntVar()
 
         topFrame = Frame (master)
         topFrame.pack()
         self.parseImage = Checkbutton ( topFrame, text = "Follow Targets", 
                                         command=self.setParseImage,
-                                        variable=self.ParseImageState)
+                                        variable=self.parseImageState)
         self.parseImage.pack()
         
 
-    def setParseImage ( self , event ):
-        print "Variable is " , self.parseImage.get()
+    def setParseImage ( self ):
+        print "Variable is %d" % self.parseImageState.get()
 
     
 
@@ -156,46 +149,25 @@ class ColorBallance:
         for v,o in zip ( valsHigh, self.highScales):
             o.set(v)
 
-# Fixme.
-# Fix the booleans.
-class Widgets(threading.Thread):
+
+# Note, this needs to run in the main thread.
+# This is because of TK/Python restrictions
+class Widgets:
     def __init__ (self, robot ):
-        threading.Thread.__init__(self)
         self.robot = robot
+        
+    def doClosing( self):
+        print "Do Closing Called"
+        master.destroy()
 
     def run(self):
-        master = Tk()
         cb = ColorBallance(master, self.robot)
         cg = CameraGains( master, self.robot)
-        # cBool = Booleans(master, self.robot)
+        cBool = Booleans(master, self.robot)
+        master.protocol('WM_DELETE_WINDOW', lambda: self.doClosing() ) 
         master.mainloop()
+        print "TkLoop done"
 
 def initWidgets ( robot ) :
     widgets = Widgets(robot)
     return widgets
-
-
-
-
-if __name__ == '__main__':
-    class Robot :
-        def __init__ (self):
-            pass
-
-        def send ( self, string):
-            print "Robot Send String called : %s" % string 
-
-        def get ( self) :
-            print "Robot Get called "
-            return "[20 30 50]"
-            
-
-    master = Tk()
-    robot = Robot ()
-
-
-
-    cb = ColorBallance( master, robot )
-    # master.pack()
-
-    master.mainloop()

@@ -29,8 +29,10 @@ class RobotClient (threading.Thread):
                 raise RuntimeError("Socked connection Closed")
 
 
-    def done(self):
+    def setDone(self):
         self.done= True
+        self.socket.shutdown( socket.SHUT_RDWR)
+        self.socket.close()
         
     # Return first buffer in chain, None if empty
     def get( self ) :
@@ -45,11 +47,13 @@ class RobotClient (threading.Thread):
         f = self.socket.makefile()
         while not self.done:
             rxBuff = f.readline() 
-            print "Recieved %s" % rxBuff
             if rxBuff == '':
-                raise RuntimeError ("Socket Connection Closed")
+                self.socket.close()
+                if not self.done:
+                    raise RuntimeError ("Socket Connection Closed")
             self.rxbuffers.append(rxBuff)
         self.socket.close()
+        print "Robot Done"
             
 
 # Class that handles the forward / reverse / left / right motoin.
@@ -127,6 +131,7 @@ class AxisState :
 class JsHandler ( threading.Thread):
     def __init__( self ):
         threading.Thread.__init__(self)
+        self.daemon =True
         self.actions = dict()
         self.verbose = True
         self.done = False
@@ -141,6 +146,9 @@ class JsHandler ( threading.Thread):
         except:
             print "Action for Key %s not found" % key 
             return None
+
+    def setDone (self):
+        self.done = True
 
     # We 'know' that we only have one joystick.
     def run(self):
@@ -166,7 +174,7 @@ class JsHandler ( threading.Thread):
 
             clock.tick(10)
         pygame.quit()
-
+        print "PyGame Done"
 
 # Factory method to create joystick handlers.
 # Handlers need a robot to operate against.
@@ -178,25 +186,4 @@ def initJsHandler( robot ):
 
 
 
-
-
-
-if __name__ == '__main__':
-    import pygame
-
-    parser = argparse.ArgumentParser(description="Louie Control Program")
-    parser.add_argument('--ipaddress', help="Robot host name", default = 'happy.local')
-    parser.add_argument('--port', help = "Port Number", type=int, default ='1857')
-    args = parser.parse_args()
-
-
-    robot = RobotClient( args.ipaddress, args.port )
-    robot.open()
-    robot.start()
-    
-    handler = JsHandler( )
-    handler.start()
-
-    handler.join()
-    robot.run()
 

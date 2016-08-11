@@ -6,7 +6,7 @@ from VideoClient import VideoClient
 from Joystick import RobotClient,  initJsHandler
 from Widgets import initWidgets
 import argparse
-import time
+import time, sys
 
 
 
@@ -43,15 +43,22 @@ if __name__ == '__main__':
 
     # Start the widget handler
     widgets = initWidgets(robot)
-    widgets.start()
-    widgets.join()
-    
-    robot.join()
-    if args.video:
-        vc.join()
+    widgets.run()
 
-    if args.joystick:
+    # Finished with widgets here...
+    robot.setDone()
+    robot.join()
+    
+
+    if args.joystick== 'y':
+        jsHandler.setDone()
         jsHandler.join()
 
 
+    if args.video == 'y':
+        vc.setDone()
+        vc.join()
+
+
+    # robot.join()
 

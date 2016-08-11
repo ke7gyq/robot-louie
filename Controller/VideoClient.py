@@ -10,9 +10,14 @@ import argparse
 class VideoClient( threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
-        
+        self.done = False
+
     def setVideoPramaters(self, server, port):
         self.server, self.port = server, port
+
+    def setDone (self) :
+        self.done = True
+
         
     def run (self):
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,7 +27,7 @@ class VideoClient( threading.Thread):
         try:
             cmdline = [ 'mplayer', '-benchmark', '-fps' , '31', '-cache' , '1024','-' ]
             player = subprocess.Popen(cmdline, stdin= subprocess.PIPE )
-            while True:
+            while not self.done :
                 data = connection.read(1024)
                 if not data:
                     break
@@ -33,19 +38,6 @@ class VideoClient( threading.Thread):
             player.terminate()
 
   
-
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Display Video Client")
-    parser.add_argument('--ipaddress', help="Robot host name", default = 'happy.local')
-    parser.add_argument('--port', help = "Port Number", type=int, default ='8000')
-    args = parser.parse_args()
-
-    vc = VideoClient()
-    vc.setVideoPramaters (args.ipaddress, args.port)
-    vc.start()
-    vc.join()
 
 
 
