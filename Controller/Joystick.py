@@ -1,6 +1,6 @@
 # Joystick.py. Provide controller gui for robot interfaces
 
-import cv2, math,numpy as np
+import math,numpy as np
 import time,socket, sys, os
 import threading,pygame
 

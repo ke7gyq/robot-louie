@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import numpy as np
-import cv2 
 import socket, time, threading, sys
 import subprocess
 
